@@ -5,6 +5,7 @@ vendor/
 
 # Generated voiceover clips
 *.mp3
+# (wav mixes and final mp4s under shorts/ are kept)
 
 # Secrets
 .env
@@ -14,3 +15,7 @@ vendor/
 __pycache__/
 *.pyc
 .DS_Store
+
+# Short builds: scratch renders and stills (finals go in renders/)
+shorts/*/out/
+shorts/*/audio/narration.wav

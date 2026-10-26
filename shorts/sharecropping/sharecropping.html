@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Sharecropping Trap</title>
+<!-- A Chunk History Short built with the animated-explainer-skills method (GSAP timelines, drop/stamp/draw patterns),
+     adapted to the channel: native 1080x1920, archival photos on the night desk, teal marks stepped at 12 fps,
+     the camera smooth, captions three words at a time. Every beat is keyed to a spoken word in timeline.js.
+     Play: open this file and click. Render: tools/render.mjs (frame-exact, via window.renderAt). -->
+<style>
+@font-face { font-family: Abril; src: url(assets/fonts/AbrilFatface.woff2) format('woff2'); }
+@font-face { font-family: Inter; font-weight: 800; src: url(assets/fonts/Inter-800.woff2) format('woff2'); }
+@font-face { font-family: Inter; font-weight: 600; src: url(assets/fonts/Inter-600.woff2) format('woff2'); }
+@font-face { font-family: Hand; src: url(assets/fonts/NanumPenScript.woff2) format('woff2'); }
+@font-face { font-family: Plex; src: url(assets/fonts/IBMPlexMono.woff2) format('woff2'); }
+:root {
+  --teal: #2FE0C4; --orange: #FF9F1C; --ink: #111; --bone: #EDE7DC; --cream: #f4efe6;
+  --paper: #ece6d8; --pink: #f6d9d3; --inkc: #0f3e37; --deep: #1f7d6e; --red: #e2554a; --owed: #8f2a20;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; background: #0d0c09; overflow: hidden; }
+#fit { position: absolute; left: 50%; top: 50%; width: 1080px; height: 1920px; transform-origin: 50% 50%; }
+#stage { position: absolute; inset: 0; overflow: hidden;
+  background: radial-gradient(ellipse at 45% 40%, #2a2620 0%, #16140f 70%, #0d0c09 100%); }
+#stage::before { content: ''; position: absolute; inset: 0; opacity: .5;
+  background: repeating-linear-gradient(to bottom, transparent 0, transparent 62px, rgba(244,239,230,.035) 62px, rgba(244,239,230,.035) 64px); }
+#world { position: absolute; inset: 0; transform-origin: 50% 40%; }
+.scene { position: absolute; inset: 0; visibility: hidden; }
+.drift { position: absolute; inset: 0; transform-origin: 50% 45%; }
+.abs { position: absolute; }
+
+/* worn archival prints: already cut and creased (tools/crease.py in the style repo) */
+.photo { position: absolute; filter: drop-shadow(8px 14px 0 rgba(0,0,0,.4)) drop-shadow(0 22px 34px rgba(0,0,0,.55)); }
+.photo img { display: block; width: 100%; }
+
+/* titles: Abril caps on torn tape. Bone tape in this heavy subject (the quiet palette); orange returns on the end card */
+.tape { position: absolute; font-family: Abril; color: var(--ink); line-height: 1.05; white-space: nowrap;
+  padding: 10px 28px 4px; filter: drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
+.tape::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--bone); clip-path: var(--torn); }
+.tape.orange::before { background: var(--orange); }
+.tape { isolation: isolate; }
+
+/* handwritten notes on torn cream slips, dark ink (handwriting over busy photos was hard to read) */
+.slip { position: absolute; font-family: Hand; font-size: 76px; line-height: 1; color: var(--inkc); white-space: nowrap;
+  padding: 10px 30px 14px; isolation: isolate; filter: drop-shadow(5px 8px 0 rgba(0,0,0,.4)) drop-shadow(0 10px 18px rgba(0,0,0,.45)); }
+.slip::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--cream); clip-path: var(--torn); }
+.slip.pink::before { background: var(--pink); }
+.hand { font-family: Hand; line-height: 1; white-space: nowrap; }
+
+/* torn ruled paper (the deal, the ledger, the year pages) */
+.paper { position: absolute; isolation: isolate; filter: drop-shadow(8px 12px 0 rgba(0,0,0,.45)) drop-shadow(0 18px 30px rgba(0,0,0,.55)); }
+.paper::before { content: ''; position: absolute; inset: 0; z-index: -2; clip-path: var(--torn); background: var(--paper);
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 79px, rgba(15,62,55,.13) 79px, rgba(15,62,55,.13) 81px); background-position: 0 30px; }
+.paper .dim { position: absolute; inset: 0; z-index: 5; background: #0a0907; opacity: 0; clip-path: var(--torn); }
+.lab { position: absolute; font-family: Hand; font-size: 66px; line-height: 1; color: var(--inkc); white-space: nowrap; }
+.bar { position: absolute; height: 56px; clip-path: polygon(0 4%, 100% 0, 99.6% 96%, 0.4% 100%); }
+.bar.deep { background: var(--deep); }
+.bar.red { background: var(--red); }
+.bar.ghost { border: 4px dashed rgba(15,62,55,.55); clip-path: none; }
+.zero { position: absolute; width: 0; border-left: 4px dashed rgba(15,62,55,.7); }
+.mono { font-family: Plex; }
+.colhead { position: absolute; font-family: Abril; font-size: 58px; color: var(--inkc); }
+
+svg.ink { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+svg.ink path, svg.ink ellipse, svg.ink line { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+/* source tags */
+.tag { position: absolute; left: 60px; top: 1452px; width: 870px; font-family: Plex; font-size: 22px; letter-spacing: 1px;
+  text-transform: uppercase; color: rgba(244,239,230,.78); line-height: 1.35; }
+
+/* definition bar */
+.defbar { position: absolute; left: 60px; width: 870px; padding: 18px 28px; background: rgba(10,9,7,.82);
+  font-family: Inter; font-weight: 600; font-size: 38px; line-height: 1.3; color: #fff; border-left: 8px solid var(--teal); }
+.defbar b { color: var(--teal); font-weight: 600; }
+
+/* camera: grain + vignette over the world */
+#vig { position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 42%, transparent 52%, rgba(0,0,0,.55) 100%); }
+#grain { position: absolute; inset: -50%; pointer-events: none; opacity: .09; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+/* captions: Inter 800 caps, cream, the spoken word in orange, three words at a time, on a soft dark band */
+#capband { position: absolute; left: 0; right: 0; top: 1150px; height: 150px; pointer-events: none;
+  background: linear-gradient(to bottom, transparent, rgba(8,7,5,.62) 30%, rgba(8,7,5,.62) 70%, transparent); }
+#cap { position: absolute; left: 60px; width: 870px; top: 1176px; height: 100px; text-align: center; font-family: Inter; font-weight: 800;
+  font-size: 88px; line-height: 100px; text-transform: uppercase; color: var(--cream); white-space: nowrap;
+  text-shadow: 0 4px 14px rgba(0,0,0,.7); }
+#cap .on { color: var(--orange); }
+#mark { position: absolute; left: 60px; top: 72px; width: 230px; opacity: .9; }
+
+/* player chrome (browser playback only; hidden while rendering) */
+#play { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.35);
+  color: #fff; font: 600 22px Inter, system-ui, sans-serif; cursor: pointer; z-index: 10; }
+#play span { padding: 16px 28px; border: 2px solid #fff; border-radius: 40px; background: rgba(0,0,0,.5); }
+#seek { position: fixed; left: 0; right: 0; bottom: 0; height: 14px; background: rgba(255,255,255,.12); cursor: pointer; z-index: 11; }
+#seek i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--orange); width: 0; }
+.render #play, .render #seek { display: none; }
+@media (prefers-reduced-motion: reduce) { #grain { display: none; } }
+</style>
+</head>
+<body>
+<div id="fit"><div id="stage">
+<div id="world">
+
+  <!-- S0 · cover (frame 0 is fully drawn) and the loop back to it at the end -->
+  <section class="scene" id="s0"><div class="drift">
+    <div class="photo" style="left:100px;top:180px;width:880px;transform:rotate(1.2deg)"><img src="assets/img/cr_weighing.png" alt="Weighing cotton, Texas, 1904"></div>
+    <div class="abs" id="s0kick" style="left:64px;top:900px;line-height:1;font-family:Abril;font-size:84px;color:#fff;text-shadow:0 4px 16px rgba(0,0,0,.8)" data-fit="870">A YEAR OF WORK.</div>
+    <div class="tape" id="s0tape" style="left:70px;top:996px;font-size:112px;transform:rotate(-1.5deg)" data-fit="840" data-torn="cover">STILL IN DEBT.</div>
+    <div class="slip" id="s0owes" style="left:600px;top:760px;transform:rotate(-4deg);color:var(--owed)" data-torn="owes1">
+      <span>= owes</span><span class="abs" style="left:-150px;top:26px;width:140px;height:44px;background:var(--red)"></span>
+    </div>
+    <div class="tag">Weighing cotton, Texas, stereograph, 1904 · Keystone View Co. · Library of Congress</div>
+  </div></section>
+
+  <!-- S1 · the name -->
+  <section class="scene" id="s1"><div class="drift">
+    <div class="photo" style="left:90px;top:200px;width:900px;transform:rotate(-1deg)"><img src="assets/img/cr_cotton_1896.png" alt="Cotton picking, Mississippi, 1896"></div>
+    <div class="tape" id="s1tape" style="left:110px;top:900px;font-size:104px;transform:rotate(-2deg)" data-fit="790" data-torn="share">SHARECROPPING</div>
+    <div class="tag">Cotton picking, Mississippi, 1896 · Library of Congress</div>
+  </div></section>
+
+  <!-- S2 · one family, a cabin -->
+  <section class="scene" id="s2"><div class="drift">
+    <div class="photo" id="s2photo" style="left:90px;top:230px;width:900px;transform:rotate(-1deg)"><img src="assets/img/cr_cabin.png" alt="A cabin, c. 1906"></div>
+    <svg class="ink" width="1080" height="1920"><ellipse id="s2loop" cx="688" cy="640" rx="62" ry="120" stroke="var(--teal)" stroke-width="7" transform="rotate(-4 688 640)"/></svg>
+    <div class="slip" id="s2acres" style="left:96px;top:990px;transform:rotate(-3deg)" data-torn="acres">20 or 30 acres</div>
+    <div class="slip" id="s2cabin" style="left:610px;top:1000px;transform:rotate(2.5deg)" data-torn="cabin">+ a cabin</div>
+    <div class="tag">A cabin, c. 1906 · Detroit Publishing Co. · Library of Congress</div>
+  </div></section>
+
+  <!-- S3 · the deal: who brings what (roll call on the names) -->
+  <section class="scene" id="s3"><div class="drift">
+    <div class="paper" id="s3card" style="left:80px;top:250px;width:850px;height:800px;transform:rotate(-.8deg)" data-torn="deal">
+      <div class="hand" style="position:absolute;left:46px;top:30px;font-size:96px;color:var(--inkc)">the deal</div>
+      <div class="colhead" style="left:46px;top:170px">PLANTER</div>
+      <div class="colhead" style="left:470px;top:170px">FAMILY</div>
+      <svg class="ink" width="850" height="800"><path id="s3div" d="M425 175 L428 740" stroke="rgba(15,62,55,.6)" stroke-width="4" stroke-dasharray="14 12"/></svg>
+      <div class="lab" id="s3land" style="left:60px;top:300px;font-size:84px">land</div>
+      <div class="lab" id="s3mule" style="left:60px;top:420px;font-size:84px">a mule</div>
+      <div class="lab" id="s3tools" style="left:60px;top:540px;font-size:84px">tools</div>
+      <div class="lab" id="s3work" style="left:484px;top:300px;font-size:84px">the work</div>
+    </div>
+  </div></section>
+
+  <!-- S4 · the split -->
+  <section class="scene" id="s4"><div class="drift">
+    <div class="abs" id="s4bale" style="left:270px;top:420px;width:540px;height:420px">
+      <div class="abs bale" id="s4L" style="left:0;top:0;width:270px;height:420px;border-radius:40px 6px 6px 40px"></div>
+      <div class="abs bale" id="s4R" style="left:270px;top:0;width:270px;height:420px;border-radius:6px 40px 40px 6px"></div>
+    </div>
+    <div class="slip" id="s4crop" style="left:370px;top:250px;transform:rotate(-3deg)" data-torn="crop">the crop</div>
+    <svg class="ink" width="1080" height="1920"><path id="s4cut" d="M540 380 L543 880" stroke="var(--teal)" stroke-width="7" stroke-dasharray="22 16"/></svg>
+    <div class="slip" id="s4pl" style="left:150px;top:900px;transform:rotate(-2deg)" data-torn="pl">planter ½</div>
+    <div class="slip" id="s4fa" style="left:570px;top:910px;transform:rotate(2deg)" data-torn="fa">family ½</div>
+  </div></section>
+
+  <!-- S5 · the year: the crop grows all year; the family eats every month before harvest -->
+  <section class="scene" id="s5"><div class="drift">
+    <div class="hand" style="position:absolute;left:96px;top:330px;font-size:96px;color:#fff">the year</div>
+    <svg class="ink" width="1080" height="1920">
+      <path id="s5axis" d="M110 780 L968 782" stroke="var(--cream)" stroke-width="5"/>
+      <path id="s5crop" d="M284 770 C 420 760, 560 700, 650 600 S 760 520, 788 500" stroke="var(--teal)" stroke-width="9"/>
+      <path id="s5harv" d="M790 470 L792 776" stroke="var(--cream)" stroke-width="5" stroke-dasharray="14 12"/>
+      <path id="s5brk" d="M140 880 L140 900 L770 902 L770 882" stroke="var(--cream)" stroke-width="6"/>
+    </svg>
+    <div id="s5months"></div>
+    <div class="hand" id="s5harvL" style="position:absolute;left:700px;top:400px;font-size:68px;color:var(--teal)">harvest</div>
+    <div class="slip" id="s5eat" style="left:250px;top:930px;transform:rotate(-2deg)" data-torn="eat">has to eat</div>
+  </div></section>
+
+  <!-- S6 · credit at the planter's store -->
+  <section class="scene" id="s6"><div class="drift">
+    <div class="photo" id="s6photo" style="left:90px;top:240px;width:900px;transform:rotate(1deg)"><img src="assets/img/cr_commissary.png" alt="Commissary, Gold Dust Plantation, 1937"></div>
+    <svg class="ink" width="1080" height="1920"><ellipse id="s6loop" cx="560" cy="480" rx="330" ry="190" stroke="var(--teal)" stroke-width="7" transform="rotate(-4 560 480)"/></svg>
+    <div class="slip" id="s6credit" style="left:96px;top:990px;transform:rotate(-3deg)" data-torn="credit">on credit</div>
+    <div class="slip pink" id="s6owned" style="left:405px;top:1004px;font-size:64px;transform:rotate(2deg)" data-torn="owned">the planter's store</div>
+    <div class="tag">Commissary (plantation store), Gold Dust Plantation, near Clarksdale, Miss., 1937 · FSA · Library of Congress</div>
+  </div></section>
+
+  <!-- S7 · the crop lien: who gets paid first -->
+  <section class="scene" id="s7"><div class="drift">
+    <div class="photo" id="s7doc" style="left:70px;top:190px;width:520px;transform:rotate(-2deg)"><img src="assets/img/desoto_contract.png" alt="Sharecropping contract, De Soto County, Miss., 1867"></div>
+    <div class="hand" id="s7who" style="position:absolute;left:640px;top:250px;font-size:72px;color:var(--teal)">paid first:</div>
+    <div class="slip" id="s7one" style="left:620px;top:360px;font-size:68px;transform:rotate(-2deg)" data-torn="one">1. the store</div>
+    <div class="slip" id="s7two" style="left:620px;top:560px;font-size:68px;transform:rotate(1.5deg)" data-torn="two">2. the family</div>
+    <div class="defbar" id="s7def" style="top:1000px;left:80px;width:830px"><b>crop lien</b> · a promise that the store gets paid first, out of the crop</div>
+    <div class="tag">Sharecropping contract, De Soto County, Miss., Feb. 1867 · Nabb Center, Salisbury Univ. · Internet Archive</div>
+  </div></section>
+
+  <!-- S8–S10 · settling up: the ledger, line by line, in bars (no dollar figures), as in Ep 2 -->
+  <section class="scene" id="s8"><div class="drift" id="s8drift">
+    <div class="paper" id="ledger" data-ovl-ok="leave" style="left:80px;top:370px;width:850px;height:770px;transform:rotate(-.6deg)" data-torn="ledger">
+      <div class="mono" style="position:absolute;left:290px;top:6px;font-size:28px;color:var(--inkc);opacity:.7">0</div>
+      <div class="zero" id="lzero" style="left:300px;top:44px;height:700px"></div>
+      <div class="lab" id="l0" style="left:40px;top:44px">the crop, sold</div>
+      <div class="bar deep" id="b0" style="left:300px;top:118px;width:500px"></div>
+      <div class="lab" id="l1" style="left:40px;top:194px">the family's half</div>
+      <div class="bar deep" id="b1" style="left:300px;top:268px;width:250px"></div>
+      <div class="bar ghost" id="b1g" style="left:550px;top:268px;width:250px"></div>
+      <div class="hand" id="l1g" style="position:absolute;left:580px;top:276px;font-size:44px;color:rgba(15,62,55,.65)">the planter's</div>
+      <div class="lab" id="l2" style="left:40px;top:344px">minus the store</div>
+      <div class="bar red" id="b2" style="left:270px;top:418px;width:280px"></div>
+      <div class="lab" id="l3" style="left:40px;top:494px">plus interest</div>
+      <div class="bar red" id="b3" style="left:210px;top:568px;width:60px"></div>
+      <svg class="ink" width="850" height="770"><path id="lr1" d="M30 640 L820 642" stroke="var(--inkc)" stroke-width="4"/><path id="lr2" d="M30 652 L820 653" stroke="var(--inkc)" stroke-width="4"/></svg>
+      <div class="bar red" id="b4" style="left:210px;top:680px;width:90px"></div>
+      <div class="lab" id="l4" style="left:330px;top:668px;font-size:84px;color:var(--owed)">= owes</div>
+      <div class="dim" id="ldim"></div>
+    </div>
+    <div class="tape" id="s8tape" style="left:150px;top:206px;font-size:110px;transform:rotate(-1.5deg)" data-fit="780" data-torn="settle">SETTLING UP</div>
+    <div class="slip" id="s8leave" data-ovl-ok="leave" style="left:300px;top:760px;transform:rotate(-4deg);font-size:96px" data-torn="leave">can't leave</div>
+  </div></section>
+
+  <!-- S11 · another year, already behind -->
+  <section class="scene" id="s11"><div class="drift">
+    <div class="paper" id="y1" style="left:110px;top:330px;width:820px;height:360px;transform:rotate(-2deg)" data-torn="y1">
+      <div class="hand" style="position:absolute;left:40px;top:26px;font-size:84px;color:var(--inkc)">next year</div>
+      <div class="zero" style="left:330px;top:140px;height:190px"></div>
+      <div class="lab" style="left:360px;top:190px">carried over</div>
+      <div class="bar red" style="left:240px;top:196px;width:90px"></div>
+    </div>
+    <div class="slip pink" id="y1note" style="left:520px;top:210px;transform:rotate(3deg)" data-torn="behind">already behind</div>
+    <div class="paper" id="y2" style="left:90px;top:740px;width:820px;height:360px;transform:rotate(1.5deg)" data-torn="y2">
+      <div class="hand" style="position:absolute;left:40px;top:26px;font-size:84px;color:var(--inkc)">and the next</div>
+      <div class="zero" style="left:330px;top:140px;height:190px"></div>
+      <div class="lab" style="left:360px;top:190px">carried over</div>
+      <div class="bar red" style="left:200px;top:196px;width:130px"></div>
+    </div>
+  </div></section>
+
+  <!-- S13 · end card: the full video -->
+  <section class="scene" id="s13"><div class="drift">
+    <div class="abs" style="left:90px;width:810px;top:560px;text-align:center;font-family:Abril;font-size:72px;color:#fff">THE FULL STORY</div>
+    <div class="tape orange" id="endtape" style="left:90px;top:670px;font-size:100px;transform:rotate(-1.5deg)" data-fit="820" data-torn="end">BOTTOM RAIL ON TOP</div>
+    <div class="abs" style="left:90px;width:810px;top:860px;text-align:center;font-family:Inter;font-weight:600;font-size:44px;color:var(--cream)">Reconstruction, Part 2 · on the channel</div>
+  </div></section>
+
+</div>
+<div id="vig"></div><div id="grain"></div>
+<div id="capband"></div><div id="cap"></div>
+<img id="mark" src="assets/img/wordmark.svg" alt="Chunk History">
+</div></div>
+<div id="play"><span>&#9654; Play with sound</span></div>
+<div id="seek"><i></i></div>
+<audio id="aud" src="audio/mix.wav" preload="auto"></audio>
+
+<script src="timeline.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/DrawSVGPlugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/CustomEase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/CustomBounce.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/CustomWiggle.min.js"></script>
+<script>
+gsap.registerPlugin(DrawSVGPlugin, CustomEase, CustomBounce, CustomWiggle);
+const RENDER = /[?&]render=1/.test(location.search);
+if (RENDER) document.documentElement.classList.add('render');
+const $ = (s) => document.querySelector(s);
+const FPS = 30, STEP = 12;                      // marks step at 12 drawings a second; the camera moves every frame
+
+// ---------------------------------------------------------------- words → times ("say it = show it")
+const W = TIMELINE.words, DUR = TIMELINE.duration;
+const norm = (w) => w.toLowerCase().replace(/[.,?!";:“”]/g, '');
+function idx(phrase, nth = 1) {
+  const p = phrase.split(' ').map(norm);
+  let hit = 0;
+  for (let i = 0; i + p.length <= W.length; i++) {
+    if (p.every((x, k) => norm(W[i + k].w) === x) && ++hit === nth) return i;
+  }
+  throw new Error('phrase not in narration: ' + phrase);
+}
+const at = (phrase, nth = 1) => W[idx(phrase, nth)].s;
+const end = (phrase, nth = 1) => W[idx(phrase, nth) + phrase.split(' ').length - 1].e;
+
+// ---------------------------------------------------------------- deterministic torn edges + text fitting
+function rng(seed) { let h = 2166136261; for (const c of seed) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return () => ((h = Math.imul(h ^ (h >>> 15), 2246822507), h = Math.imul(h ^ (h >>> 13), 3266489909), (h ^= h >>> 16) >>> 0) / 4294967296); }
+function torn(seed, w, h, amp = 7) {
+  const r = rng(seed), pts = [], step = 22;
+  for (let x = 0; x <= w; x += step) pts.push([x, r() * amp]);
+  for (let y = 0; y <= h; y += step) pts.push([w - r() * amp, y]);
+  for (let x = w; x >= 0; x -= step) pts.push([x, h - r() * amp]);
+  for (let y = h; y >= 0; y -= step) pts.push([r() * amp, y]);
+  return 'polygon(' + pts.map(([x, y]) => `${x.toFixed(1)}px ${y.toFixed(1)}px`).join(',') + ')';
+}
+function layout() {
+  document.querySelectorAll('[data-fit]').forEach((el) => {
+    const max = +el.dataset.fit;
+    let fs = parseFloat(getComputedStyle(el).fontSize);
+    while (el.offsetWidth > max && fs > 30) { fs -= 2; el.style.fontSize = fs + 'px'; }
+  });
+  document.querySelectorAll('[data-torn]').forEach((el) => el.style.setProperty('--torn', torn(el.dataset.torn, el.offsetWidth, el.offsetHeight)));
+  // month ticks for the year line
+  const m = $('#s5months'); 'JFMAMJJASOND'.split('').forEach((c, i) => {
+    const d = document.createElement('div'); d.className = 'abs mono'; d.textContent = c;
+    Object.assign(d.style, {left: (126 + i * 72) + 'px', top: '800px', width: '40px', textAlign: 'center', fontSize: '34px', color: 'var(--cream)'});
+    m.appendChild(d);
+  });
+}
+
+// ---------------------------------------------------------------- timelines: cam (smooth) + mk (stepped)
+const cam = gsap.timeline({paused: true});
+const mk = gsap.timeline({paused: true});
+const BEATS = [];                                // every content beat, for tools/check.mjs (dead-zone audit)
+const beat = (t) => (BEATS.push(+t.toFixed(2)), t);
+CustomBounce.create('thud', {strength: .45, squash: 1.6});
+CustomWiggle.create('wigSettle', {wiggles: 4, type: 'easeOut'});
+
+/** a scene's window: soft dissolve in/out and a slow push (shots change gently on this channel) */
+function scene(id, a, b, {fadeIn = .3, push = .045} = {}) {
+  const el = '#' + id;
+  cam.set(el, {autoAlpha: 0}, 0);
+  if (a <= 0) cam.set(el, {autoAlpha: 1}, 0); else cam.to(el, {autoAlpha: 1, duration: fadeIn, ease: 'power1.out'}, a - fadeIn / 2);
+  cam.to(el, {autoAlpha: 0, duration: .3, ease: 'power1.in'}, b - .15);
+  cam.fromTo(el + ' > .drift', {scale: 1}, {scale: 1 + push, duration: b - a + .4, ease: 'none', immediateRender: false}, Math.max(0, a - .2));
+}
+/** a mark appears (slip, label): small pop at 12 fps */
+function pop(sel, t, {rot = 0} = {}) {
+  mk.set(sel, {autoAlpha: 0}, 0);
+  mk.fromTo(sel, {autoAlpha: 0, scale: 1.25}, {autoAlpha: 1, scale: 1, duration: .25, ease: 'back.out(2)', immediateRender: false}, beat(t));
+  if (rot) mk.to(sel, {rotation: '+=' + rot, duration: .5, ease: 'wigSettle'}, t + .25);
+}
+/** a teal line draws on (DrawSVG), stepped */
+function draw(sel, t, dur = .5) {
+  mk.set(sel, {drawSVG: '0%'}, 0);
+  mk.to(sel, {drawSVG: '100%', duration: dur, ease: 'power1.inOut'}, beat(t));
+}
+/** a title stamps onto the desk: stamp slam (scale 2.6 → 1, power4) */
+function stamp(sel, t) {
+  mk.set(sel, {autoAlpha: 0}, 0);
+  mk.fromTo(sel, {autoAlpha: 0, scale: 2.4}, {autoAlpha: 1, scale: 1, duration: .3, ease: 'power4.out', immediateRender: false}, beat(t));
+}
+/** a print or page drops in with weight: CustomBounce, the squash is the weight */
+function drop(sel, t) {
+  cam.set(sel, {autoAlpha: 0, transformOrigin: '50% 100%'}, 0);
+  cam.set(sel, {autoAlpha: 1}, beat(t));
+  cam.fromTo(sel, {y: -150}, {y: 0, duration: .8, ease: 'thud', immediateRender: false}, t);
+  cam.fromTo(sel, {scaleY: 1}, {scaleY: .94, scaleX: 1.02, duration: .8, ease: 'thud-squash', immediateRender: false}, t);
+}
+/** a bar grows from its anchored side */
+function grow(sel, t, dur, origin = 'left') {
+  mk.set(sel, {scaleX: 0, transformOrigin: origin + ' center'}, 0);
+  mk.to(sel, {scaleX: 1, duration: dur, ease: 'power1.inOut'}, beat(t));
+}
+
+function build() {
+  // scene windows (cut on the first word of each new idea)
+  const T = {
+    s1: at("It's called"), s2: at('A family moves'), s3: at('The planter provides'), s4: at('At harvest,'),
+    s5: at('until harvest,'), s6: at('So they bought'), s7: at('they signed'), s8: at('And at the end'),
+    s11: at('So they sign'), trap: at('But for a'), endc: end('no way out.') + .35,
+  };
+  scene('s0', 0, T.s1, {push: .015});
+  scene('s1', T.s1, T.s2);
+  scene('s2', T.s2, T.s3);
+  scene('s3', T.s3, T.s4);
+  scene('s4', T.s4, T.s5);
+  scene('s5', T.s5, T.s6, {push: .03});
+  scene('s6', T.s6, T.s7);
+  scene('s7', T.s7, T.s8);
+  scene('s8', T.s8, T.s11, {push: .02});
+  scene('s11', T.s11, T.trap);
+  // the loop: the last story shot is the cover again, so a replay runs straight on
+  cam.set('#s0 > .drift', {scale: 1}, T.trap - .2);                        // same framing as frame 0
+  cam.to('#s0', {autoAlpha: 1, duration: .35}, T.trap - .17);
+  cam.to('#s0', {autoAlpha: 0, duration: .3}, T.endc - .15);
+  scene('s13', T.endc, DUR + 1, {push: .02});
+
+  // S0 cover: everything drawn on frame 0; the owed bar lands on "owes"
+  pop('#s0owes', at('owes'), {rot: 4});
+  mk.to('#s0owes', {scale: 1.08, duration: .18, yoyo: true, repeat: 1}, at('made.'));
+  // S1 the name
+  stamp('#s1tape', at('sharecropping.'));
+  // S2 the family
+  drop('#s2photo', T.s2 - .1);
+  draw('#s2loop', at('family moves'), .6);
+  pop('#s2acres', at('20'));
+  pop('#s2cabin', at('cabin.'));
+  // S3 the deal: the planter's column rolls in name by name, then the family's
+  drop('#s3card', T.s3 - .1);
+  draw('#s3div', T.s3 + .5, .4);
+  pop('#s3land', at('land,'));
+  pop('#s3mule', at('mule'));
+  pop('#s3tools', at('tools.'));
+  pop('#s3work', at('work.'), {rot: 3});
+  // S4 the split
+  drop('#s4bale', T.s4 - .05);
+  pop('#s4crop', at('crop.'));
+  draw('#s4cut', at('split'), .4);
+  cam.to('#s4L', {x: -70, rotation: -3, duration: .5, ease: 'power2.out'}, beat(at('half and half.')));
+  cam.to('#s4R', {x: 70, rotation: 3, duration: .5, ease: 'power2.out'}, at('half and half.'));
+  pop('#s4pl', at('half and half.') + .2);
+  pop('#s4fa', at('half.', 2) - .05);
+  // S5 the year
+  draw('#s5axis', T.s5 - .1, .35);
+  mk.set('#s5months', {autoAlpha: 0}, 0); mk.to('#s5months', {autoAlpha: 1, duration: .2}, T.s5 + .1);
+  draw('#s5crop', T.s5 + .2, .8);
+  draw('#s5harv', at('harvest,', 2) + .2, .3);
+  pop('#s5harvL', at('harvest,', 2) + .3);
+  draw('#s5brk', at('family has'), .45);
+  pop('#s5eat', at('eat.'));
+  // S6 the store
+  drop('#s6photo', T.s6 - .1);
+  pop('#s6credit', at('credit.'));
+  draw('#s6loop', at('local store,'), .6);
+  pop('#s6owned', at('by the planter.'), {rot: 3});
+  // S7 the lien
+  drop('#s7doc', T.s7 - .2);
+  pop('#s7def', at('lien.'));
+  pop('#s7who', at('promise'));
+  pop('#s7one', at('paid first,'), {rot: 3});
+  pop('#s7two', at('family sees'));
+  mk.to('#s7two', {autoAlpha: .45, duration: .2}, at('cent.'));
+  // S8 settling up, then the ledger line by line
+  stamp('#s8tape', at('settling up.'));
+  drop('#ledger', at('settling up.') + .7);
+  [['#l0', '#b0', 'sold.'], ['#l1', '#b1', "family's half"]].forEach(([l, b, p]) => { pop(l, at(p) - .1); grow(b, at(p) + .15, .5); });
+  pop('#b1g', at('comes in.')); pop('#l1g', at('comes in.') + .1);
+  pop('#l2', at('Then the store')); grow('#b2', at('subtracts'), end('they bought,') - at('subtracts'), 'right');
+  pop('#l3', at('plus interest')); grow('#b3', at('interest.') , .5, 'right');
+  const owes = at('owes', 2);
+  draw('#lr1', owes - .7, .25); draw('#lr2', owes - .45, .25);
+  pop('#l4', owes); grow('#b4', owes + .05, .45, 'right');
+  mk.to('#b4', {boxShadow: '0 0 0 6px rgba(226,85,74,.55), 0 0 36px 10px rgba(226,85,74,.6)', duration: .35, yoyo: true, repeat: 3}, owes + .5);
+  // camera pushes in on the line that matters
+  cam.to('#world', {scale: 1.05, x: 25, y: 0, duration: 1.6, ease: 'power2.inOut'}, beat(at('more than it made.', 2)));
+  cam.to('#world', {scale: 1, x: 0, y: 0, duration: .6, ease: 'power2.inOut'}, T.s11 - .5);
+  // S10 can't leave
+  mk.set('#ldim', {opacity: 0}, 0); mk.to('#ldim', {opacity: .5, duration: .25}, at('That means'));
+  pop('#s8leave', at("can't leave."), {rot: -3});
+  // S11 another year, already behind
+  drop('#y1', at('another year,') - .1);
+  pop('#y1note', at('behind.'), {rot: 3});
+  drop('#y2', at('Then another.') - .05);
+  // S12 the loop: back on the cover; the owed slip is cleared so the frame matches frame 0, the title re-stamps on "trap"
+  mk.set('#s0owes', {autoAlpha: 0}, T.trap - .2);
+  // (plain .to tweens: they record scale 1 as their start, so seeking back to the cover leaves the title as it was)
+  mk.to('#s0tape', {scale: 1.9, duration: .001}, beat(at('trap')));
+  mk.to('#s0tape', {scale: 1, duration: .3, ease: 'power4.out'}, at('trap') + .001);
+  // S13 end card
+  stamp('#endtape', T.endc + .1);
+  return T;
+}
+
+// ---------------------------------------------------------------- captions: 3 words at a time, never across a sentence end
+const CAPS = [];
+(function groups() {
+  let g = [];
+  W.forEach((w, i) => {
+    g.push(i);
+    if (g.length === 3 || /[.?!]["”]?$/.test(w.w) || i === W.length - 1) { CAPS.push(g); g = []; }
+  });
+})();
+const capEl = $('#cap');
+let lastCap = '';
+function captions(t) {
+  let html = '';
+  for (let k = 0; k < CAPS.length; k++) {
+    const g = CAPS[k], a = W[g[0]].s - .05, nxt = CAPS[k + 1] ? W[CAPS[k + 1][0]].s - .05 : Infinity;
+    const b = Math.min(nxt, W[g[g.length - 1]].e + .6);
+    if (t >= a && t < b) {
+      html = g.map((i) => `<span class="${t >= W[i].s - .03 ? (i === g.findLast((j) => t >= W[j].s - .03) ? 'on' : '') : ''}">${W[i].w.replace(/[.,]$/, '')}</span>`).join(' ');
+      break;
+    }
+  }
+  if (html !== lastCap) {
+    capEl.innerHTML = html; lastCap = html;
+    capEl.style.fontSize = '88px';
+    for (let fs = 88; capEl.scrollWidth > 870 && fs > 56; fs -= 4) capEl.style.fontSize = fs + 'px';
+  }
+}
+
+// ---------------------------------------------------------------- the clock
+function renderAt(t) {
+  cam.seek(Math.max(t, 1e-4), false);                     // (a seek to exactly 0 skips the zero-length sets at 0)
+  mk.seek(Math.max(Math.floor(t * STEP + 1e-6) / STEP, 1e-4), false);
+  captions(t);
+  $('#seek i').style.width = (100 * t / DUR) + '%';
+}
+function fit() {
+  const s = Math.min(innerWidth / 1080, innerHeight / 1920);
+  $('#fit').style.transform = `translate(-50%,-50%) scale(${s})`;
+}
+
+let T0;
+async function boot() {
+  await document.fonts.ready;
+  await Promise.all([...document.images].map((im) => im.decode().catch(() => {})));
+  layout();
+  T0 = build();
+  renderAt(0);
+  fit(); addEventListener('resize', fit);
+  window.__ready = true;
+}
+window.renderAt = renderAt;
+window.__beats = () => BEATS.slice().sort((a, b) => a - b);
+window.__dur = DUR;
+boot();
+
+// playback in a browser: the audio is the clock
+if (!RENDER) {
+  const aud = $('#aud');
+  let raf = 0;
+  const tick = () => { renderAt(aud.currentTime); if (!aud.paused) raf = requestAnimationFrame(tick); };
+  $('#play').onclick = () => { $('#play').style.display = 'none'; aud.play(); tick(); };
+  aud.onended = () => { $('#play').style.display = 'flex'; $('#play span').innerHTML = '&#8635; Replay'; aud.currentTime = 0; };
+  document.addEventListener('keydown', (e) => {
+    if (e.key === ' ') { e.preventDefault(); aud.paused ? (aud.play(), tick(), $('#play').style.display = 'none') : aud.pause(); }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { aud.currentTime = Math.max(0, aud.currentTime + (e.key === 'ArrowRight' ? 3 : -3)); renderAt(aud.currentTime); }
+  });
+  $('#seek').onclick = (e) => { aud.currentTime = DUR * e.clientX / innerWidth; renderAt(aud.currentTime); };
+  document.addEventListener('visibilitychange', () => { if (document.hidden) aud.pause(); });
+}
+</script>
+<style>
+/* the cotton bale: burlap over cream, three bands, one light from the top left */
+.bale { background: linear-gradient(160deg, #f7f1e3 0%, #e4d9c2 60%, #cbbd9f 100%);
+  box-shadow: inset 0 6px 0 rgba(255,255,255,.45), inset 0 -10px 0 rgba(0,0,0,.12), 10px 16px 0 rgba(0,0,0,.4), 0 26px 40px rgba(0,0,0,.5);
+  background-image: repeating-linear-gradient(90deg, transparent 0 88px, #6b5a3e 88px 100px), repeating-linear-gradient(0deg, rgba(120,100,70,.12) 0 3px, transparent 3px 9px),
+    linear-gradient(160deg, #f7f1e3 0%, #e4d9c2 60%, #cbbd9f 100%); }
+</style>
+</body>
+</html>
