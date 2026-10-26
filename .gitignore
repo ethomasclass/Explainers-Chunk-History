@@ -1,0 +1,16 @@
+# GSAP is fetched by inline-gsap.py into here — we don't redistribute it.
+# GSAP is free to download yourself (see the note in inline-gsap.py).
+vendor/
+**/vendor/
+
+# Generated voiceover clips
+*.mp3
+
+# Secrets
+.env
+.env.*
+
+# Python / OS cruft
+__pycache__/
+*.pyc
+.DS_Store
